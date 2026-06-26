@@ -58,8 +58,8 @@ export default function MainGrid({ clases, onCellClick, onClassClick }) {
              <div className="absolute inset-0 pointer-events-none flex">
                {DAYS.map(day => (
                  <div key={`overlay-${day}`} className="flex-1 relative border-r border-transparent last:border-r-0">
-                    {clases.map(clase => {
-                       return clase.sesiones
+                   {(clases || []).map(clase => {
+                       return (clase.sesiones || [])
                          .filter(s => s.dia === day)
                          .map((sesion, idx) => {
                             const [startH, startM] = sesion.horaInicio.split(':').map(Number);

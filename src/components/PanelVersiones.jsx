@@ -54,7 +54,7 @@ export default function PanelVersiones({ isOpen, onClose, versiones, onClonarVer
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
           <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
-            {versiones.map((v) => (
+            {(versiones || []).map((v) => (
               <div key={v.id} className="relative pl-6">
                 {/* Node */}
                 <div className={`absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm ${getNodeColor(v.estado)}`}></div>

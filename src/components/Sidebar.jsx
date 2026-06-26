@@ -34,7 +34,7 @@ export default function Sidebar({ materias, docentes, onAddDocente, onEditDocent
         </button>
 
         <div className="flex flex-col gap-3">
-          {activeTab === 'materias' && materias.map(materia => (
+          {activeTab === 'materias' && (materias || []).map(materia => (
             <DraggableSubjectCard 
               key={materia.id} 
               materia={materia} 
@@ -43,7 +43,7 @@ export default function Sidebar({ materias, docentes, onAddDocente, onEditDocent
           ))}
           {activeTab === 'docentes' && (
              docentes && docentes.length > 0 ? (
-               docentes.map(docente => (
+               (docentes || []).map(docente => (
                  <div 
                    key={docente.id}
                    onClick={() => onEditDocente(docente)}

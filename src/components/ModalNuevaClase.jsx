@@ -4,8 +4,8 @@ import { X, Plus, Clock, Calendar, Check, AlertCircle } from 'lucide-react';
 export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSeleccionada, materias, onSave }) {
   const [formData, setFormData] = useState({
     materiaId: '',
-    docente: '',
-    grupo: '',
+    docenteId: '',
+    grupoId: '',
     modalidad: 'Presencial',
     fija: false,
     dia: 'Lunes',
@@ -13,13 +13,34 @@ export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSel
     horaFin: '10:00'
   });
 
+  const [docentes, setDocentes] = useState([]);
+  const [grupos, setGrupos] = useState([]);
+  const [loadingCatalogos, setLoadingCatalogos] = useState(true);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLoadingCatalogos(true);
+      Promise.all([
+        fetch('http://localhost:8080/api/docentes/activos').then(res => res.json()).catch(() => []),
+        fetch('http://localhost:8080/api/grupos').then(res => res.json()).catch(() => [])
+      ])
+      .then(([docentesData, gruposData]) => {
+        setDocentes(docentesData || []);
+        setGrupos(gruposData || []);
+      })
+      .finally(() => {
+        setLoadingCatalogos(false);
+      });
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       if (claseSeleccionada) {
         setFormData({
           materiaId: claseSeleccionada.materia?.id || '',
-          docente: claseSeleccionada.docente || '',
-          grupo: claseSeleccionada.grupo || '',
+          docenteId: claseSeleccionada.docente?.id || claseSeleccionada.docente || '',
+          grupoId: claseSeleccionada.grupo?.id || claseSeleccionada.grupo || '',
           modalidad: claseSeleccionada.modalidad || 'Presencial',
           fija: claseSeleccionada.fija || false,
           dia: claseSeleccionada.sesiones?.[0]?.dia || 'Lunes',
@@ -44,8 +65,8 @@ export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSel
 
         setFormData({
           materiaId: initialData.materia?.id || '',
-          docente: '',
-          grupo: '',
+          docenteId: '',
+          grupoId: '',
           modalidad: 'Presencial',
           fija: false,
           dia: day,
@@ -55,8 +76,8 @@ export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSel
       } else {
         setFormData({
           materiaId: '',
-          docente: '',
-          grupo: '',
+          docenteId: '',
+          grupoId: '',
           modalidad: 'Presencial',
           fija: false,
           dia: 'Lunes',
@@ -74,14 +95,17 @@ export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSel
   };
 
   const handleSave = () => {
-    const selectedMateria = materias.find(m => m.id === formData.materiaId);
+    const selectedMateria = (materias || []).find(m => m.id === formData.materiaId);
     if (!selectedMateria) return alert("Por favor, selecciona una materia.");
+
+    const dObj = (docentes || []).find(d => d.id.toString() === formData.docenteId.toString());
+    const gObj = (grupos || []).find(g => g.id.toString() === formData.grupoId.toString());
 
     const nuevaClase = {
       id: claseSeleccionada ? claseSeleccionada.id : `new-${Date.now()}`,
       materia: selectedMateria,
-      docente: formData.docente || 'Docente por asignar',
-      grupo: formData.grupo || 'G1',
+      docente: dObj ? `${dObj.nombres} ${dObj.apellidos}` : (formData.docenteId || 'Docente por asignar'),
+      grupo: gObj ? gObj.nombre : (formData.grupoId || 'G1'),
       modalidad: formData.modalidad,
       fija: formData.fija,
       sesiones: [{
@@ -119,50 +143,56 @@ export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSel
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
-          
-          <div className="grid grid-cols-2 gap-5">
-            <div className="col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Materia</label>
-              <select 
-                value={formData.materiaId}
-                onChange={e => setFormData({...formData, materiaId: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white transition-all hover:border-slate-300"
-              >
-                <option value="" disabled>Seleccione una materia...</option>
-                {materias.map(m => (
+        {loadingCatalogos ? (
+          <div className="p-12 text-center text-slate-500 font-medium flex-1 flex flex-col justify-center items-center">
+            <div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mb-4"></div>
+            Cargando catálogos...
+          </div>
+        ) : (
+          <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            
+            <div className="grid grid-cols-2 gap-5">
+              <div className="col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Materia</label>
+                <select 
+                  value={formData.materiaId}
+                  onChange={e => setFormData({...formData, materiaId: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white transition-all hover:border-slate-300"
+                >
+                  <option value="" disabled>Seleccione una materia...</option>
+                {(materias || []).map(m => (
                   <option key={m.id} value={m.id}>{m.codigo} - {m.nombre}</option>
                 ))}
               </select>
-            </div>
+              </div>
 
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Docente</label>
-              <select 
-                value={formData.docente}
-                onChange={e => setFormData({...formData, docente: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white transition-all hover:border-slate-300"
-              >
-                <option value="">Seleccione docente...</option>
-                <option value="Dr. Juan Pérez">Dr. Juan Pérez</option>
-                <option value="Ing. María Gómez">Ing. María Gómez</option>
-                <option value="Lic. Carlos López">Lic. Carlos López</option>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Docente</label>
+                <select 
+                  value={formData.docenteId}
+                  onChange={e => setFormData({...formData, docenteId: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white transition-all hover:border-slate-300"
+                >
+                  <option value="">Seleccione docente...</option>
+                {(docentes || []).map(d => (
+                  <option key={d.id} value={d.id}>{d.nombres} {d.apellidos}</option>
+                ))}
               </select>
-            </div>
+              </div>
 
-            <div className="col-span-2 sm:col-span-1">
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Grupo</label>
-              <select 
-                value={formData.grupo}
-                onChange={e => setFormData({...formData, grupo: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white transition-all hover:border-slate-300"
-              >
-                <option value="">Seleccione grupo...</option>
-                <option value="G1">G1</option>
-                <option value="G2">G2</option>
-                <option value="G3">G3</option>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Grupo</label>
+                <select 
+                  value={formData.grupoId}
+                  onChange={e => setFormData({...formData, grupoId: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:bg-white transition-all hover:border-slate-300"
+                >
+                  <option value="">Seleccione grupo...</option>
+                {(grupos || []).map(g => (
+                  <option key={g.id} value={g.id}>{g.nombre}</option>
+                ))}
               </select>
-            </div>
+              </div>
 
             <div className="col-span-2">
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Modalidad</label>
@@ -252,9 +282,9 @@ export default function ModalNuevaClase({ isOpen, onClose, initialData, claseSel
                </div>
                <AlertCircle className="w-5 h-5 text-slate-400 shrink-0 ml-2" />
              </label>
+            </div>
           </div>
-
-        </div>
+        )}
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end space-x-3">

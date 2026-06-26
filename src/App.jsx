@@ -105,7 +105,7 @@ function App() {
   const currentVersion = versiones[0];
 
   const handleClonarVersion = () => {
-    const highestVersion = Math.max(...versiones.map(v => v.numeroVersion));
+    const highestVersion = Math.max(...(versiones || []).map(v => v.numeroVersion), 0);
     const nuevaVersion = {
       id: Date.now(),
       numeroVersion: highestVersion + 1,
@@ -116,7 +116,7 @@ function App() {
   };
 
   const handleCambiarEstado = (versionId, nuevoEstado) => {
-    setVersiones(versiones.map(v => 
+    setVersiones((versiones || []).map(v => 
       v.id === versionId ? { ...v, estado: nuevoEstado } : v
     ));
   };
@@ -134,7 +134,7 @@ function App() {
       const materiaId = active.id;
       const targetCellId = over.id; // e.g. "Lunes-08:00"
       
-      const materia = materias.find(m => m.id === materiaId);
+      const materia = (materias || []).find(m => m.id === materiaId);
       
       setModalData({
         materia,
@@ -207,9 +207,9 @@ function App() {
           onSave={(nuevaClase) => {
             if (claseSeleccionada) {
               console.log(`Editando clase ID: ${claseSeleccionada.id}`);
-              setClasesProgramadas(clasesProgramadas.map(c => c.id === claseSeleccionada.id ? nuevaClase : c));
+              setClasesProgramadas((clasesProgramadas || []).map(c => c.id === claseSeleccionada.id ? nuevaClase : c));
             } else {
-              setClasesProgramadas([...clasesProgramadas, nuevaClase]);
+              setClasesProgramadas([...(clasesProgramadas || []), nuevaClase]);
             }
             setIsModalOpen(false);
             setModalData(null);
@@ -251,10 +251,10 @@ function App() {
                <div className="w-1.5 h-10 bg-teal-600 rounded-full mr-3"></div>
                <div>
                   <p className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-0.5">
-                    {materias.find(m => m.id === activeDragId)?.codigo}
+                    {(materias || []).find(m => m.id === activeDragId)?.codigo}
                   </p>
                   <p className="font-bold text-sm text-slate-800 leading-tight">
-                    {materias.find(m => m.id === activeDragId)?.nombre}
+                    {(materias || []).find(m => m.id === activeDragId)?.nombre}
                   </p>
                </div>
             </div>
